@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - CI/CD
+
+jobs:
+  build:
+    name: "Build and Push"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [16, 18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup mode | ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "yarn"
+      - run: yarn install
+
+      - name: Generate tag
+        id: generate_tag
+        run: |
+          SHA=$(echo $GITHUB_SHA | head -c7)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Build docker image
+        run: docker build -t new-sgs-ci:${{ steps.generate_tag.outputs.sha }} .
